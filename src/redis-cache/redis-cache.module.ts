@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { RedlockProvider } from 'utils/redislock';
 
-@Module({})
+@Global()
+@Module({
+    providers : [RedlockProvider],
+    exports : [RedlockProvider]
+})
 export class RedisCacheModule {}

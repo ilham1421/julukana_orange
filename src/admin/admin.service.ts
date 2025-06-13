@@ -30,7 +30,7 @@ export class AdminService {
                 result: true,
             },
         });
-        await this.cache.set(key, paginatedUsers, 60 * 60); // Cache for 1 hour
+        await this.cache.set(key, paginatedUsers); // Cache for 1 hour
         return paginatedUsers;
     }
 
@@ -177,7 +177,7 @@ export class AdminService {
             take,
         });
 
-        await this.cache.set(key, paginatedSoals, 60 * 60); // Cache for 1 hour
+        await this.cache.set(key, paginatedSoals); // Cache for 1 hour
 
         return paginatedSoals;
     }
@@ -223,12 +223,12 @@ export class AdminService {
             data,
         });
 
-        await this.cache.set("soal_"+id, newSoal)
+        await this.cache.set("soal_" + id, newSoal)
 
         const allSoals = await this.prisma.soal.findMany()
-        
+
         await this.cache.set("soalsanswer", allSoals);
-        await this.cache.set("soals", allSoals.map(({answer, ...el}) => el))
+        await this.cache.set("soals", allSoals.map(({ answer, ...el }) => el))
 
         return {
             message: 'Soal updated successfully',
@@ -240,7 +240,13 @@ export class AdminService {
             data,
         });
 
-        await this.cache.set("soal_"+newSoal.id, newSoal)
+        await this.cache.set("soal_" + newSoal.id, newSoal)
+
+
+        const allSoals = await this.prisma.soal.findMany()
+
+        await this.cache.set("soalsanswer", allSoals);
+        await this.cache.set("soals", allSoals.map(({ answer, ...el }) => el))
 
         return {
             message: 'Soal created successfully',

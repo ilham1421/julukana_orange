@@ -8,9 +8,9 @@ import { UseAuth } from 'decorator/auth';
 import { PaginationQueryDto } from 'src/dto/pagination.dto';
 
 @Controller('admin')
-@Roles('ADMIN')
+// @Roles('ADMIN')
 @ApiTags('admin')
-@UseAuth()
+// @UseAuth()
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 

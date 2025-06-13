@@ -19,6 +19,7 @@ export class UserService {
         let soals = await this.cache.get<Soal[]>(cacheKey);
 
         if (soals) {
+            console.log("FROM REDIS")
             return soals;
         }
 
@@ -38,7 +39,7 @@ export class UserService {
                     answer: includeAnswer ? true : false,
                 },
             });
-            await this.cache.set('soals', soals, 60 * 60); // Cache for 1 hour
+            await this.cache.set('soals', soals); // Cache for 1 hour
             await lock.release();
 
             return soals
@@ -107,7 +108,7 @@ export class UserService {
         await this.cache.set(`user_${userId}`, {
             ...user,
             result
-        }, 60 * 60); // Cache for 1 hour
+        }); // Cache for 1 hour
 
         return {
             score

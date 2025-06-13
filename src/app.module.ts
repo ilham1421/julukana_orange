@@ -19,15 +19,15 @@ import { RedlockProvider } from 'utils/redislock';
       host: process.env.REDIS_URL, // or your Redis server IP
       port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379, // default Redis port
       password: process.env.REDIS_PASS, // uncomment if you set a password
-      ttl: 60, // cache time-to-live in seconds
+      ttl: 1000 * 60 * 60, // cache time-to-live in seconds
+      isGlobal: true
     }),
     AuthModule, PrismaModule, AdminModule, UserModule, RedisCacheModule],
   controllers: [AppController],
   providers: [AppService, {
     provide: APP_GUARD,
     useClass: RolesGuard
-  },
-    RedlockProvider
+  }
   ],
 })
 export class AppModule { }
