@@ -16,13 +16,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: AuthPayload, request : Request) {
+    async validate(request : Request, payload: AuthPayload) {
+
 
         const parseRequest = RequestSignatureSchema.safeParse({
-            signature: request.headers['x-signature'],
-            timestamp: request.headers['x-timestamp'],
-            endpoint: request.headers['x-endpoint'],
-            method: request.headers['x-method'],
+            signature: request.headers?.['x-signature'],
+            timestamp: request.headers?.['x-timestamp'],
+            endpoint: request.headers?.['x-endpoint'],
+            method: request.headers?.['x-method'],
         })
 
         if (!parseRequest.success) {
@@ -31,8 +32,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
         const { signature, timestamp, endpoint, method } = parseRequest.data;
 
+
         const user = await this.authService.validateUser(
-            payload.id,
+            payload.user_id,
             signature,
             timestamp,
             endpoint,

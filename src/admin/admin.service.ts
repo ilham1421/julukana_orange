@@ -1,11 +1,12 @@
-import { Inject, Injectable, UseGuards } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { UpsertSoalDTO } from './dto/soal.dto';
-import { UpsertUserDto } from './dto/user-update.dto';
+import { CreateUserDto, UpsertUserDto } from './dto/user-update.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { PaginationQueryDto } from 'src/dto/pagination.dto';
 import { UserSession } from 'types/auth';
+import { redis } from 'utils/redislock';
 
 @Injectable()
 export class AdminService {
@@ -30,8 +31,19 @@ export class AdminService {
                 result: true,
             },
         });
+
+
         await this.cache.set(key, paginatedUsers); // Cache for 1 hour
+
+
         return paginatedUsers;
+    }
+
+    private async refreshUsersCache() {
+        const keys = await redis.keys('*users_*');
+        if (keys.length > 0) {
+            await redis.del(...keys);
+        }
     }
 
     async getUserById(id: string) {
@@ -48,7 +60,7 @@ export class AdminService {
         });
     }
 
-    async createUser(data: UpsertUserDto) {
+    async createUser(data: CreateUserDto) {
         const existingUser = await this.prisma.user.findFirst({
             where: {
                 nip: data.nip,
@@ -56,16 +68,19 @@ export class AdminService {
         });
 
         if (existingUser) {
-            throw new Error('User with this NIP already exists');
+            throw new BadRequestException('NIP ini sudah ada');
         }
 
-        const user = this.prisma.user.create({
+
+        const user = await this.prisma.user.create({
             data: {
                 name: data.nama,
                 nip: data.nip,
-                client_secret: ""
+                client_secret: "",
+                role: data.role
             },
             select: {
+
                 name: true,
                 id: true,
                 client_secret: true,
@@ -75,7 +90,12 @@ export class AdminService {
             }
         });
 
-        await this.cache.set('users', user); // Clear cache after creating a user
+        await this.refreshUsersCache()
+
+
+        await this.cache.set(`user_${user.id}`, user); // Cache for 1 hour
+
+
         return user;
     }
 
@@ -85,10 +105,13 @@ export class AdminService {
         });
 
         if (!user) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
         }
 
-        await this.cache.del(`user_${id}`); // Clear cache for the user
+        await this.refreshUsersCache()
+
+        await this.cache.del(`user_${id}`); // Clear cache for this user
+
 
         return this.prisma.user.delete({
             where: { id },
@@ -108,13 +131,16 @@ export class AdminService {
         }
 
         if (!user) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
         }
-
 
         user = await this.prisma.user.update({
             where: { id },
-            data,
+            data: {
+                name: data.nama,
+                nip: data.nip,
+                role: data.role,
+            },
             select: {
                 name: true,
                 id: true,
@@ -125,7 +151,9 @@ export class AdminService {
             }
         });
 
-        await this.cache.set("user_" + user.id, user)
+        await this.refreshUsersCache()
+        await this.cache.set(`user_${user.id}`, user); // Cache for 1 hour
+
 
         return {
             message: "Berhasil"
@@ -158,6 +186,13 @@ export class AdminService {
 
         return {
             message: "Berhasil"
+        }
+    }
+
+    private async refreshSoalCache() {
+        const keys = await redis.keys('*soals_*');
+        if (keys.length > 0) {
+            await redis.del(...keys);
         }
     }
 
@@ -199,6 +234,7 @@ export class AdminService {
         });
 
         await this.cache.del("soal_" + id)
+        await this.refreshSoalCache()
 
         return {
             message: "Success"
@@ -226,6 +262,7 @@ export class AdminService {
         await this.cache.set("soal_" + id, newSoal)
 
         const allSoals = await this.prisma.soal.findMany()
+        await this.refreshSoalCache()
 
         await this.cache.set("soalsanswer", allSoals);
         await this.cache.set("soals", allSoals.map(({ answer, ...el }) => el))
@@ -244,6 +281,8 @@ export class AdminService {
 
 
         const allSoals = await this.prisma.soal.findMany()
+        
+        await this.refreshSoalCache()
 
         await this.cache.set("soalsanswer", allSoals);
         await this.cache.set("soals", allSoals.map(({ answer, ...el }) => el))

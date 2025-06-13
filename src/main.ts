@@ -18,6 +18,14 @@ async function bootstrap() {
     }),
   );
 
+  app.setGlobalPrefix('api');
+
+  // Enable CORS
+  app.enableCors({
+    origin: '*', // Set your allowed origins here
+  })
+
+
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('API Documentation')

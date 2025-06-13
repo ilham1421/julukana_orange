@@ -14,9 +14,9 @@ export class AuthService {
     // private userSessions: Map<string, UserSession> = new Map()
     constructor(@Inject(CACHE_MANAGER) private cache : Cache, private readonly prisma: PrismaService, private readonly jwt: JwtService) { }
 
-    async validateUser(userId: string, signature: string, timestamp: number, endpoint: string, method: string) {
+    async validateUser(userId: string, signature: string, timestamp: string, endpoint: string, method: string) {
         const user : UserSession = await this.cache.get("user_"+userId)
-
+        
         if (user) {
             const signatureHash = `${timestamp}:${endpoint}:${method}:${userId}`;
             const isValid = this.verifySignature(user.client_secret, signature, signatureHash);
@@ -46,7 +46,6 @@ export class AuthService {
                 result: true,
             }
         });
-
 
         if (!user) {
             throw new UnauthorizedException('User not found');
@@ -79,7 +78,11 @@ export class AuthService {
         this.cache.set("user_"+user.id, userSession);
 
         return {
-            payload: user.id,
+            payload: {
+                id: user.id,
+                name: user.name,
+                role: user.role,
+            },
             token: token
         }
     }

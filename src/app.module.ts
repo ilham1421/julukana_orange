@@ -9,17 +9,29 @@ import { AdminModule } from './admin/admin.module';
 import { UserModule } from './user/user.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { RedisCacheModule } from './redis-cache/redis-cache.module';
-import * as redisStore from 'cache-manager-redis-store';
-import { RedlockProvider } from 'utils/redislock';
+import Keyv from 'keyv';
+import { CacheableMemory } from 'cacheable';
+import KeyvRedis, { createKeyv } from '@keyv/redis';
 
 @Module({
   imports: [
-    CacheModule.register({
-      store: redisStore,
-      host: process.env.REDIS_URL, // or your Redis server IP
-      port: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379, // default Redis port
-      password: process.env.REDIS_PASS, // uncomment if you set a password
-      ttl: 1000 * 60 * 60, // cache time-to-live in seconds
+    CacheModule.registerAsync({
+      useFactory: async () => {
+
+
+        const keyv = new Keyv(new KeyvRedis({
+          url: `redis://${process.env.REDIS_URL}:${process.env.REDIS_PORT}`, // The Redis server URL (use 'rediss' for TLS)
+          password: process.env.REDIS_PASS, // Optional password if Redis has authentication enabled
+
+        }), {
+          ttl : 1000 * 60 * 60 , // Default TTL of 24 hours
+        });
+
+        return {
+          stores: keyv
+        }
+      },
+
       isGlobal: true
     }),
     AuthModule, PrismaModule, AdminModule, UserModule, RedisCacheModule],

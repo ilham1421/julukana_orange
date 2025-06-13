@@ -14,15 +14,14 @@ datasource db {
 }
 
 model User {
-  id       String   @id @default(cuid())
+  id       String   @id @default(uuid())
   name      String
   nip     String @unique
-  client_secret String
+  client_secret String?
   role Role @default(USER)
   ban  Boolean @default(false)
 
   result Result?
-
 }
 
 model Soal {

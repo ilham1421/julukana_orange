@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, HttpCode, HttpStatus, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { UpsertUserDto } from './dto/user-update.dto';
+import { CreateUserDto, UpsertUserDto } from './dto/user-update.dto';
 import { UpsertSoalDTO } from './dto/soal.dto';
 import { Roles } from 'decorator/role';
 import { UseAuth } from 'decorator/auth';
@@ -33,7 +33,7 @@ export class AdminController {
   @ApiBody({ type: UpsertUserDto })
   @ApiResponse({ status: 201, description: 'User created' })
   @Post('users')
-  createUser(@Body() data: UpsertUserDto) {
+  createUser(@Body() data: CreateUserDto) {
     return this.adminService.createUser(data);
   }
 
