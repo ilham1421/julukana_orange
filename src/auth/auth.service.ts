@@ -68,6 +68,7 @@ export class AuthService {
 
         const userSession: UserSession = {
             id: user.id,
+            nip : user.nip,
             name: user.name,
             client_secret: client_secret,
             result: user.result,
@@ -82,6 +83,8 @@ export class AuthService {
                 id: user.id,
                 name: user.name,
                 role: user.role,
+                result : user.result,
+                nip : user.nip
             },
             token: token
         }

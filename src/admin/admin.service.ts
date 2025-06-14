@@ -7,6 +7,8 @@ import { Cache } from 'cache-manager';
 import { PaginationQueryDto } from 'src/dto/pagination.dto';
 import { UserSession } from 'types/auth';
 import { redis } from 'utils/redislock';
+import { ResultStatus, Setting } from '@prisma/client';
+import { SettingDto } from './dto/setting.dto';
 
 @Injectable()
 export class AdminService {
@@ -142,6 +144,7 @@ export class AdminService {
                 role: data.role,
             },
             select: {
+                nip : true,
                 name: true,
                 id: true,
                 client_secret: true,
@@ -178,11 +181,12 @@ export class AdminService {
 
         await this.prisma.result.delete({
             where: {
-                id: id
+                id: user.result.id
             }
         })
 
         await this.cache.del("user_" + id)
+        await this.refreshUsersResultCache()
 
         return {
             message: "Berhasil"
@@ -281,7 +285,7 @@ export class AdminService {
 
 
         const allSoals = await this.prisma.soal.findMany()
-        
+
         await this.refreshSoalCache()
 
         await this.cache.set("soalsanswer", allSoals);
@@ -304,6 +308,102 @@ export class AdminService {
         return soal;
     }
 
+    
 
+    async getAllSettings() {
+        const cacheKey = 'settings';
+        let settings = await this.cache.get<Setting[]>(cacheKey);
+
+        if (!settings) {
+            const settingRecord = await this.prisma.setting.findMany();
+
+            const settingsMap = settingRecord.reduce((acc, setting) => {
+                acc[setting.key] = setting.value;
+                return acc
+            }, {});
+
+            await this.cache.set(cacheKey, settingsMap);
+        }
+
+        return settings;
+    }
+
+    async upsertSettings({ data }: SettingDto) {
+        const returnSettings : {
+            [key: string]: string;
+        } = {}
+        for (const setting in data) {
+            
+            await this.prisma.setting.upsert({
+                where: { key: setting },
+                update: { value:  data[setting]+"" },
+                create: { key: setting, value:  data[setting]+"" },
+            })
+
+            returnSettings[setting] = data[setting]+""; // Ensure value is string
+
+        }
+        
+        await this.cache.set('settings', returnSettings);
+        return { message: 'Settings updated successfully' };
+    }
+
+    async refreshUsersResultCache() {
+        const keys = await redis.keys('*user_results_*');
+        if (keys.length > 0) {
+            await redis.del(...keys);
+        }
+    }
+
+    async getUserResults(query : PaginationQueryDto) {
+        let results =  await this.cache.get('user_results_'+query.page + "_" + query.limit);
+        if (!results) {
+            const skip = (query.page - 1) * query.limit;
+            const take = query.limit;
+
+            results = await this.prisma.result.findMany({
+                skip,
+                take,
+                include: {
+                    user: {
+                        select : {
+                            name : true,
+                            nip : true,
+                            id : true
+                        }
+                    }
+                },
+                orderBy: {
+                    score: 'desc'
+                }
+            });
+
+            await this.cache.set('user_results_'+query.page + "_" + query.limit, results); // Cache for 1 hour
+        }
+
+        return results;
+    }
+
+    async changeUserResultStatus(id : string, status : ResultStatus ) {
+        const result = await this.cache.get(`result_${id}`);
+        if (!result) {
+            throw new NotFoundException('Result not found');
+        }
+        const updatedResult = await this.prisma.result.update({
+            where: { id },
+            data: {
+                status: status
+            }
+        });
+
+        await this.cache.set(`result_${id}`, updatedResult); // Cache for 1 hour
+        
+        await this.refreshUsersResultCache();
+        
+        return {
+            message: "Status updated successfully",
+        }
+    } 
+    
 
 }

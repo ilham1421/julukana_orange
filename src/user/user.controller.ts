@@ -2,8 +2,15 @@ import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/comm
 import { ApiOperation, ApiResponse, ApiTags, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JawabAllSoalDto } from './dto/soal.dto';
+import { UseAuth } from 'decorator/auth';
+import { Roles } from 'decorator/role';
+import { User } from 'decorator/user';
+import { UserSession } from 'types/auth';
 
+@UseAuth()
 @Controller('user')
+@ApiTags('user')
+@Roles("USER")
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
@@ -21,8 +28,24 @@ export class UserController {
   @Post('jawab')
   async jawabAllSoal(
     @Body() body: JawabAllSoalDto,
-    @Query('userId') userId: string,
+    @User() user: UserSession,
   ) {
-    return this.userService.jawabAllSoal(userId, body.jawaban);
+    return this.userService.jawabAllSoal(user.id, body.jawaban);
   }
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get all settings' })
+  @ApiResponse({ status: 200, description: 'Array of settings', type: [Array] })
+  async getAllSettings() {
+    return await this.userService.getAllSettings();
+  }
+
+  @Get("mulai")
+  @ApiOperation({ summary: 'Mulai ujian' })
+  @ApiResponse({ status: 200, description: 'Mulai ujian' })
+  async mulaiUjian(@User() user : UserSession) {
+    return await this.userService.createUserResult(user.id);
+  }
+
+
 }

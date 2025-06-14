@@ -41,8 +41,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             method
         )
 
-    
-
-        return user
+        return {
+            ...user,
+        }
     }
 }

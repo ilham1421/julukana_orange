@@ -45,8 +45,21 @@ model Result {
   userId    String  @unique
   score     Int
   createdAt DateTime @default(now())
+  percentage Float 
+  status ResultStatus @default(STARTED)
+
+
 
   user      User     @relation(fields: [userId], references: [id])
+}
+
+enum ResultStatus {
+  STARTED
+  COMPLETED
+  FAILED
+  CHEATED
+  CONFIRMED
+  REJECTED
 }
 
 enum Role {

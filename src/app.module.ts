@@ -24,7 +24,7 @@ import KeyvRedis, { createKeyv } from '@keyv/redis';
           password: process.env.REDIS_PASS, // Optional password if Redis has authentication enabled
 
         }), {
-          ttl : 1000 * 60 * 60 , // Default TTL of 24 hours
+          ttl: 1000 * 60 * 60, // Default TTL of 24 hours
         });
 
         return {
@@ -36,10 +36,7 @@ import KeyvRedis, { createKeyv } from '@keyv/redis';
     }),
     AuthModule, PrismaModule, AdminModule, UserModule, RedisCacheModule],
   controllers: [AppController],
-  providers: [AppService, {
-    provide: APP_GUARD,
-    useClass: RolesGuard
-  }
+  providers: [AppService
   ],
 })
 export class AppModule { }

@@ -6,18 +6,20 @@ import { UpsertSoalDTO } from './dto/soal.dto';
 import { Roles } from 'decorator/role';
 import { UseAuth } from 'decorator/auth';
 import { PaginationQueryDto } from 'src/dto/pagination.dto';
+import { SettingDto } from './dto/setting.dto';
+import { UserResultDto } from './dto/user-result.dto';
 
 @Controller('admin')
-// @Roles('ADMIN')
+@Roles('ADMIN')
 @ApiTags('admin')
-// @UseAuth()
+@UseAuth()
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'List of users' })
   @Get('users')
-  getAllUsers(@Query() query : PaginationQueryDto) {
+  getAllUsers(@Query() query: PaginationQueryDto) {
     return this.adminService.getAllUsers(query);
   }
 
@@ -65,7 +67,7 @@ export class AdminController {
   @ApiOperation({ summary: 'Get all soal' })
   @ApiResponse({ status: 200, description: 'List of soal' })
   @Get('soal')
-  getAllSoal(@Query() query : PaginationQueryDto) {
+  getAllSoal(@Query() query: PaginationQueryDto) {
     return this.adminService.getAllSoal(query);
   }
 
@@ -101,4 +103,42 @@ export class AdminController {
   deleteSoal(@Param('id') id: string) {
     return this.adminService.deleteSoal(id);
   }
+
+
+  @Get('settings')
+  @ApiOperation({ summary: 'Get all settings' })
+  @ApiResponse({ status: 200, description: 'Array of settings', type: [Array] })
+  async getAllSettings() {
+    const settings = await this.adminService.getAllSettings();
+    // Transform to DTO if needed
+    return settings;
+  }
+
+  @Put('settings')
+  @ApiOperation({ summary: 'Upsert settings' })
+  @ApiResponse({ status: 200, description: 'Settings updated successfully' })
+  async upsertSettings(
+    @Body() body: SettingDto
+  ) {
+    return this.adminService.upsertSettings(body);
+  }
+
+  @Get("user-results")
+  @ApiOperation({ summary: 'Get user results' })
+  @ApiResponse({ status: 200, description: 'List of user results' })
+  async getUserResults(@Query() query: PaginationQueryDto) {
+    return this.adminService.getUserResults(query);
+  }
+
+  @Put("user-results/:id")
+  @ApiOperation({ summary: 'Update user result' })
+  @ApiParam({ name: 'id', description: 'User Result ID' })
+  @ApiResponse({ status: 200, description: 'User result updated' })
+  async updateUserResult(
+    @Param('id') id: string,
+    @Body() data: UserResultDto
+  ) {
+    return this.adminService.changeUserResultStatus(id, data.data);
+  }
+
 }

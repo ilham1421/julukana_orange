@@ -8,6 +8,7 @@ export type AuthPayload = {
 export type UserSession = {
     id: string;
     name: string;
+    nip : string;
     client_secret: string;
     result: Result;
     role : Role;
