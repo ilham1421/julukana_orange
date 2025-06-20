@@ -17,7 +17,7 @@ export class AdminService {
     ) { }
 
     async getAllUsers(query: PaginationQueryDto) {
-        const key = `users_${query.page}_${query.limit}`;
+        const key = `users_${query.page}_${query.limit}_${query.search}`;
         const users = await this.cache.get(key);
 
         if (users) {
@@ -29,14 +29,18 @@ export class AdminService {
         const paginatedUsers = await this.prisma.user.findMany({
             skip,
             take,
+            where : {
+                OR: [
+                    { name: { contains: query.search, mode: 'insensitive' } },
+                    { nip: { contains: query.search, mode: 'insensitive' } }
+                ]
+            },
             include: {
                 result: true,
             },
         });
 
-
         await this.cache.set(key, paginatedUsers); // Cache for 1 hour
-
 
         return paginatedUsers;
     }
@@ -201,7 +205,7 @@ export class AdminService {
     }
 
     async getAllSoal(query: PaginationQueryDto) {
-        const key = `soals_${query.page}_${query.limit}`;
+        const key = `soals_${query.page}_${query.limit}_${query.search}`;
         const soals = await this.cache.get(key);
 
         if (soals) {
@@ -214,6 +218,11 @@ export class AdminService {
         const paginatedSoals = await this.prisma.soal.findMany({
             skip,
             take,
+            where: {
+                OR: [
+                    { question: { contains: query.search, mode: 'insensitive' } },
+                ]
+            },
         });
 
         await this.cache.set(key, paginatedSoals); // Cache for 1 hour
