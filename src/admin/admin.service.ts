@@ -24,12 +24,15 @@ export class AdminService {
             return users;
         }
 
+
+
+
         const skip = (query.page - 1) * query.limit;
         const take = query.limit;
         const paginatedUsers = await this.prisma.user.findMany({
             skip,
             take,
-            where : {
+            where: {
                 OR: [
                     { name: { contains: query.search, mode: 'insensitive' } },
                     { nip: { contains: query.search, mode: 'insensitive' } }
@@ -40,9 +43,21 @@ export class AdminService {
             },
         });
 
-        await this.cache.set(key, paginatedUsers); // Cache for 1 hour
 
-        return paginatedUsers;
+        const result = {
+            users: paginatedUsers,
+            total: await this.prisma.user.count({
+                where: {
+                    OR: [
+                        { name: { contains: query.search, mode: 'insensitive' } },
+                        { nip: { contains: query.search, mode: 'insensitive' } }
+                    ]
+                }
+            }),
+        }
+        await this.cache.set(key, result); // Cache for 1 hour
+
+        return result
     }
 
     private async refreshUsersCache() {
@@ -127,6 +142,7 @@ export class AdminService {
     async updateUser(id: string, data: UpsertUserDto) {
 
         let user = await this.cache.get<UserSession>(`user_${id}`);
+
         if (!user) {
             user = await this.prisma.user.findUnique({
                 where: { id },
@@ -148,7 +164,7 @@ export class AdminService {
                 role: data.role,
             },
             select: {
-                nip : true,
+                nip: true,
                 name: true,
                 id: true,
                 client_secret: true,
@@ -225,9 +241,20 @@ export class AdminService {
             },
         });
 
-        await this.cache.set(key, paginatedSoals); // Cache for 1 hour
+        const result = {
+            soals: paginatedSoals,
+            total: await this.prisma.soal.count({
+                where: {
+                    OR: [
+                        { question: { contains: query.search, mode: 'insensitive' } },
+                    ]
+                }
+            }),
+        }
 
-        return paginatedSoals;
+        await this.cache.set(key, result); // Cache for 1 hour
+
+        return result
     }
 
     async deleteSoal(id: string) {
@@ -317,7 +344,7 @@ export class AdminService {
         return soal;
     }
 
-    
+
 
     async getAllSettings() {
         const cacheKey = 'settings';
@@ -338,21 +365,21 @@ export class AdminService {
     }
 
     async upsertSettings({ data }: SettingDto) {
-        const returnSettings : {
+        const returnSettings: {
             [key: string]: string;
         } = {}
         for (const setting in data) {
-            
+
             await this.prisma.setting.upsert({
                 where: { key: setting },
-                update: { value:  data[setting]+"" },
-                create: { key: setting, value:  data[setting]+"" },
+                update: { value: data[setting] + "" },
+                create: { key: setting, value: data[setting] + "" },
             })
 
-            returnSettings[setting] = data[setting]+""; // Ensure value is string
+            returnSettings[setting] = data[setting] + ""; // Ensure value is string
 
         }
-        
+
         await this.cache.set('settings', returnSettings);
         return { message: 'Settings updated successfully' };
     }
@@ -364,8 +391,8 @@ export class AdminService {
         }
     }
 
-    async getUserResults(query : PaginationQueryDto) {
-        let results =  await this.cache.get('user_results_'+query.page + "_" + query.limit);
+    async getUserResults(query: PaginationQueryDto) {
+        let results = await this.cache.get('user_results_' + query.page + "_" + query.limit);
         if (!results) {
             const skip = (query.page - 1) * query.limit;
             const take = query.limit;
@@ -375,10 +402,10 @@ export class AdminService {
                 take,
                 include: {
                     user: {
-                        select : {
-                            name : true,
-                            nip : true,
-                            id : true
+                        select: {
+                            name: true,
+                            nip: true,
+                            id: true
                         }
                     }
                 },
@@ -387,13 +414,13 @@ export class AdminService {
                 }
             });
 
-            await this.cache.set('user_results_'+query.page + "_" + query.limit, results); // Cache for 1 hour
+            await this.cache.set('user_results_' + query.page + "_" + query.limit, results); // Cache for 1 hour
         }
 
         return results;
     }
 
-    async changeUserResultStatus(id : string, status : ResultStatus ) {
+    async changeUserResultStatus(id: string, status: ResultStatus) {
         const result = await this.cache.get(`result_${id}`);
         if (!result) {
             throw new NotFoundException('Result not found');
@@ -406,13 +433,13 @@ export class AdminService {
         });
 
         await this.cache.set(`result_${id}`, updatedResult); // Cache for 1 hour
-        
+
         await this.refreshUsersResultCache();
-        
+
         return {
             message: "Status updated successfully",
         }
-    } 
-    
+    }
+
 
 }
