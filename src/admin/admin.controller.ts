@@ -22,6 +22,7 @@ export class AdminController {
   getAllUsers(@Query() query: PaginationQueryDto) {
     return this.adminService.getAllUsers(query);
   }
+  
 
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiParam({ name: 'id', description: 'User ID' })
