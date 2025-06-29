@@ -16,6 +16,13 @@ import { UserResultDto } from './dto/user-result.dto';
 export class AdminController {
   constructor(private readonly adminService: AdminService) { }
 
+  @ApiOperation({ summary: 'Get admin dashboard' })
+  @ApiResponse({ status: 200, description: 'Admin dashboard data' })
+  @Get('dashboard')
+  getDashboard() {
+    return this.adminService.dashboard();
+  }  
+
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'List of users' })
   @Get('users')

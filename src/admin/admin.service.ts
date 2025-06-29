@@ -16,6 +16,24 @@ export class AdminService {
         @Inject(CACHE_MANAGER) private readonly cache: Cache,
     ) { }
 
+
+    async dashboard() {
+        const totalUsers = await this.prisma.user.count({
+            where : {
+                role : "USER"
+            }
+        });
+        const totalSoals = await this.prisma.soal.count();
+        const totalResults = await this.prisma.result.count();
+
+
+        return {
+            totalUsers,
+            totalSoals,
+            totalResults,
+        };
+    }
+
     async getAllUsers(query: PaginationQueryDto) {
         const key = `users_${query.page}_${query.limit}_${query.search}`;
         const users = await this.cache.get(key);
